@@ -1,0 +1,39 @@
+# Supabase CLI configuration for local development (`npx supabase start`).
+# Only settings Lockt cares about are listed; everything else uses CLI defaults.
+
+project_id = "studylog"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[storage]
+enabled = true
+# Per-bucket limits (5 MB photos / 2 MB avatars) are set in the storage migration.
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:8081"
+# Deep links used for email confirmation and password reset.
+additional_redirect_urls = ["studylog://**", "exp://**", "http://localhost:8081/**"]
+jwt_expiry = 3600
+enable_signup = true
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+# Local dev signs users in immediately; enable confirmations on hosted projects.
+enable_confirmations = false
+double_confirm_changes = true
