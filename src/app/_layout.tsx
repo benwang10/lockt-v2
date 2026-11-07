@@ -139,7 +139,8 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
         <Stack.Screen name="profile/edit" options={{ title: 'Edit profile', presentation: 'modal' }} />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
-        <Stack.Screen name="status" options={{ title: 'Your note', presentation: 'modal' }} />
+        <Stack.Screen name="note" options={{ title: 'Your note', presentation: 'modal' }} />
+        <Stack.Screen name="feedback" options={{ title: 'Send feedback', presentation: 'modal' }} />
       </Stack.Protected>
 
       {/* Reachable from email links in any auth state. */}

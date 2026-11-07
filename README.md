@@ -18,6 +18,8 @@ Postgres with Row Level Security, private Storage). Runs on iOS and Android; the
 
 **Setting up a hosted Supabase project and testing on your phone? Follow
 [`docs/HOSTED_SETUP.md`](docs/HOSTED_SETUP.md).**
+**Sharing Lockt with friends (hosted web app, TestFlight, Android APK, feedback)? See
+[`docs/BETA.md`](docs/BETA.md).**
 
 ---
 
@@ -82,10 +84,19 @@ npm start
 ```
 
 Press `i` (iOS simulator), `a` (Android emulator) or `w` (browser), or scan the QR code with Expo Go. All
-native modules used (image picker, image manipulator, crypto, symbols, font, system UI, AsyncStorage) ship
-with Expo Go, so no custom dev build is required. Fonts are bundled files loaded with `expo-font`; the
-animations (confetti, study backgrounds) use React Native's built-in `Animated` API. No new native
-dependencies were added.
+native modules used (image picker, image manipulator, crypto, symbols, font, system UI, AsyncStorage, and
+`react-native-svg` for the logo, like heart and sign-up decals) ship with Expo Go, so no custom dev build is
+required. Fonts are bundled files loaded with `expo-font`; the animations (confetti, study backgrounds,
+hold-to-finish) use React Native's built-in `Animated` API.
+
+Production web build (what the hosting providers run; output in `dist/`):
+
+```bash
+npx expo export --platform web
+```
+
+> Tip: `CI=1 npx expo start` disables file watching, so edits won't reload; run `npx expo start` normally while
+> developing.
 
 ## 5. Checks and tests
 
@@ -105,14 +116,23 @@ npm test
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run test:db
 ```
 
-- `npm test` — unit + UI tests (runs in `America/Los_Angeles` so DST weeks are exercised):
+- `npm test` — unit + UI + web tests (runs in `America/Los_Angeles` so DST weeks are exercised):
   - unit: timer math across pause/resume/background/restart, clock skew, calendar-week boundaries
     (167/169-hour DST weeks), weekly goal progress, stats and stacked-chart subject segments, validation,
     error mapping, status rules, highlight formatting, notification destinations for stale targets,
     appearance/background preference persistence, once-per-session confetti.
   - ui (`*.test.tsx`, expo-router testing library): the unavailable-post navigation regression (post made
-    private / deleted / access revoked while open, opened from a link with no history) and the study
-    background's animation lifecycle (paused, reduced motion, hidden screen).
+    private / deleted / access revoked while open, opened from a link with no history), the study
+    background's animation lifecycle (paused, reduced motion, hidden screen), hold-to-finish (quick tap, early
+    release, 3 s hold, exactly once, background/blur/screen change/unmount/busy cancel), completion confetti on
+    the real screen (failed save, retry, shared, reopen, edit, reduced motion), optimistic like rollback,
+    single-submit sign-in/sign-up, and the feedback form.
+  - web (`*.web.test.tsx`, `jest-expo/web` + react-dom into jsdom): the DOM that react-native-web produces —
+    `aria-checked` on radios and Space activation, real `href`s on link rows, Button double-click protection,
+    the filled/hollow heart with `aria-pressed`, the Note sheet without nested buttons, and hold-to-finish by
+    keyboard (key repeat ignored) and mouse.
+  - unit also covers v2.5 emoji segmentation (skin tones, ZWJ, flags, keycaps), subject palette contrast and
+    distinctness, confetti geometry, and feedback validation.
 - `npm run verify:hosted` — runs ~40 checks against your **hosted** project through the real Auth, Data API
   and Storage services, using two of your test accounts (passwords typed at a hidden prompt) and the public key
   only. It cleans up after itself. See `docs/HOSTED_SETUP.md` step 7.
@@ -124,7 +144,9 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run test:d
   unauthorized reads/writes, follow/like uniqueness, feed/photo/comment visibility, the full two-account
   scenario, and (`tests/db/features.test.ts`) study-buddy transitions and privacy, notification generation,
   deduplication, authorization and stale targets, profile-status ownership/length/expiry/audience, and the
-  profile highlight's private-data protection.
+  profile highlight's private-data protection; (`tests/db/feedback.test.ts`) feedback is insert-only through
+  `submit_feedback` (nobody can read, edit or delete it via the API, anon can't submit), validation, the hourly
+  rate limit, and that keyboard emoji sequences are accepted by the notes constraint.
 
 ---
 
@@ -134,18 +156,22 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run test:d
 
 ```
 src/app/                 Expo Router routes
-  (auth)/                sign-in, sign-up, forgot-password
-  (tabs)/                feed (notes strip + notification bell), study, progress, profile
+  (auth)/                sign-in, sign-up (logo + embossed decals), forgot-password
+  (tabs)/                feed (logo, notes strip, notification bell), study, progress, profile
   session/[id]/          detail (+comments, buddy invitation) and edit/completion screen (+buddies, confetti)
   user/[id]/             profile and follower/following lists
-  notifications, status (your note), settings (appearance, profile highlight)
+  notifications, note (your note; `/status` is reserved by Metro's dev server), settings (appearance,
+  profile highlight, Send feedback), feedback
   search, subjects, goals/new, profile/edit, onboarding, reset-password, auth-callback
 src/constants/           theme.ts (warm light/dark palettes, type scale), fonts.ts (font families)
 src/providers/           auth + profile state, active-session (timer) state, theme, toasts
 src/lib/                 Supabase client, API modules, pure logic (timer, week, stats, status, highlight, …)
 assets/fonts/            bundled Source Serif 4 + Inter with their OFL licenses
-supabase/migrations/     schema, RPCs, RLS + grants, storage, and (20261104*) highlight, notes,
-                         notifications, study buddies
+supabase/migrations/     schema, RPCs, RLS + grants, storage, (20261104*) highlight, notes,
+                         notifications, study buddies, and (20261106*) beta feedback
+assets/images/logo.svg   source of the Lockt mark (icons/favicon were rendered from it)
+netlify.toml, vercel.json  static web hosting with single-page fallback (docs/BETA.md)
+eas.json                 EAS build profiles for an Android preview APK and store/TestFlight builds
 tests/db/                database integration tests
 ```
 
@@ -207,6 +233,11 @@ tests/db/                database integration tests
   (milestones marked complete this week) are owner-only because goals are private.
 - **Confetti** plays once per session, after the first confirmed save on the completion screen (Followers or
   Only me), never on failure, retries, edits or reopening; with reduced motion a static success mark is shown.
+  v2.5: a ~1.7 s radial burst from just above the centre of the screen (`CONFETTI_ORIGIN`), never blocking touches.
+- **Beta feedback** (v2.5): Settings → Send feedback → Bug / Suggestion / Other + message. Stored through the
+  `submit_feedback` SECURITY DEFINER function with the caller's id, app version and platform only; the table has
+  no API grants, so nobody (including the sender) can read it through the app. Owners read it in the dashboard
+  (query in `docs/BETA.md`). 20 per account per hour.
 
 ### Calendar week
 
@@ -217,7 +248,7 @@ are deleted and paused time is never recorded. Milestones are only completed whe
 
 ---
 
-## Known limitations (v1)
+## Known limitations
 
 - No offline queue beyond the timer's pending-action retry. Other edits show an error and keep your input,
   but they aren't queued.
@@ -226,7 +257,12 @@ are deleted and paused time is never recorded. Milestones are only completed whe
 - Signed photo URLs already handed out stay valid until they expire (≤10 min) after access is revoked.
 - Following needs no approval, and there's no blocking or reporting yet.
 - Password reset and email confirmation rely on deep links opened **on the same device** (PKCE).
-- The app icon and splash image are still the Expo template placeholders.
+- Bundle identifiers are still the placeholder `com.example.studylog`; choose your own before a store/TestFlight
+  build (see `docs/BETA.md`).
+- The web build has a favicon but no web manifest / home-screen icon yet.
+- Hold-to-finish relies on press-and-hold; VoiceOver/TalkBack users can use their screen reader's "double-tap and
+  hold" gesture. There is deliberately no single-activation shortcut.
+- Feedback can't be viewed or deleted in the app (dashboard only), and there are no attachments.
 - Notifications are in-app only (no push). Existing activity from before the notifications migration is not
   backfilled.
 - Appearance and study-background choices are stored per device, not per account.

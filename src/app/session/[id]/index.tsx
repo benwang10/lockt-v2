@@ -1,11 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { SessionCard } from '@/components/session-card';
 import { Button, IconButton } from '@/components/ui/button';
+import { PressableLink } from '@/components/ui/pressable-link';
 import { Banner, EmptyState, ErrorState, LoadingState } from '@/components/ui/states';
 import { AppText } from '@/components/ui/text';
 import { MAX_CONTENT_WIDTH, Radius, Spacing, Type } from '@/constants/theme';
@@ -72,6 +73,9 @@ export default function SessionDetailScreen() {
   const [draft, setDraft] = useState('');
   const [draftId, setDraftId] = useState(() => randomId());
   const [sending, setSending] = useState(false);
+  // Synchronous guards: a click plus Enter in the same frame must not post twice.
+  const sendingRef = useRef(false);
+  const deletingRef = useRef(new Set<string>());
   const [sendError, setSendError] = useState<string | null>(null);
 
   // Remember the photo we showed so its signed URL can be forgotten once access is lost.
@@ -104,7 +108,8 @@ export default function SessionDetailScreen() {
 
   const send = async () => {
     const body = draft.trim();
-    if (!body || sending) return;
+    if (!body || sendingRef.current) return;
+    sendingRef.current = true;
     setSending(true);
     setSendError(null);
     try {
@@ -144,14 +149,17 @@ export default function SessionDetailScreen() {
       }
       setSendError(`Comment not posted: ${friendlyError(e)}`);
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
 
   const remove = async (comment: Comment) => {
-    const ok = await confirmAction({ title: 'Delete your comment?', confirmLabel: 'Delete', destructive: true });
-    if (!ok) return;
+    if (deletingRef.current.has(comment.id)) return;
+    deletingRef.current.add(comment.id);
     try {
+      const ok = await confirmAction({ title: 'Delete your comment?', confirmLabel: 'Delete', destructive: true });
+      if (!ok) return;
       await deleteComment(comment.id);
       query.setData((prev) =>
         prev
@@ -165,6 +173,8 @@ export default function SessionDetailScreen() {
       invalidate('sessions');
     } catch (e) {
       toast(friendlyError(e), 'error');
+    } finally {
+      deletingRef.current.delete(comment.id);
     }
   };
 
@@ -217,12 +227,12 @@ export default function SessionDetailScreen() {
           ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
           renderItem={({ item }) => (
             <View style={[styles.column, styles.comment]}>
-              <Pressable
+              <PressableLink
+                href={`/user/${item.author.id}`}
                 onPress={() => router.push({ pathname: '/user/[id]', params: { id: item.author.id } })}
-                accessibilityRole="link"
                 accessibilityLabel={`${item.author.display_name}'s profile`}>
                 <Avatar path={item.author.avatar_path} name={item.author.display_name} seed={item.author.id} size={36} />
-              </Pressable>
+              </PressableLink>
               <View style={styles.commentBody}>
                 <AppText variant="smallStrong">
                   {item.author.display_name}{' '}
@@ -259,6 +269,18 @@ export default function SessionDetailScreen() {
               maxLength={LIMITS.comment}
               multiline
               style={styles.input}
+              // Desktop web: Enter posts, Shift+Enter adds a new line. Phones keep the return key for new lines.
+              {...(Platform.OS === 'web'
+                ? {
+                    onKeyPress: (e: { nativeEvent: { key: string; shiftKey?: boolean }; preventDefault: () => void }) => {
+                      if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                        e.preventDefault();
+                        send();
+                      }
+                    },
+                    accessibilityHint: 'Press Enter to post, Shift+Enter for a new line',
+                  }
+                : {})}
             />
             <Button title="Post" size="sm" onPress={send} loading={sending} disabled={!draft.trim()} />
           </View>

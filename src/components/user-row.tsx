@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/ui/button';
+import { PressableLink } from '@/components/ui/pressable-link';
 import { AppText } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import type { ProfileSummary } from '@/lib/types';
@@ -23,10 +24,10 @@ export function UserRow({
   const styles = useStyles();
   return (
     <View style={styles.row}>
-      <Pressable
+      <PressableLink
         style={styles.main}
+        href={`/user/${user.id}`}
         onPress={() => router.push({ pathname: '/user/[id]', params: { id: user.id } })}
-        accessibilityRole="link"
         accessibilityLabel={`${user.display_name}, @${user.username}`}>
         <Avatar path={user.avatar_path} name={user.display_name} seed={user.id} size={44} />
         <View style={styles.text}>
@@ -37,7 +38,7 @@ export function UserRow({
             @{user.username}
           </AppText>
         </View>
-      </Pressable>
+      </PressableLink>
       {onToggleFollow ? (
         <Button
           title={following ? 'Following' : 'Follow'}

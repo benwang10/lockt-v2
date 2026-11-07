@@ -75,14 +75,14 @@ When prompted, type the **database password** from step 1. The prompt hides the 
 npx supabase migration list
 ```
 
-Expect 9 local migrations (`20261102000100` … `20261102000400` and `20261104000100` … `20261104000500`) and
-**no** remote ones.
+Expect 10 local migrations (`20261102000100` … `20261102000400`, `20261104000100` … `20261104000500` and
+`20261106000100`) and **no** remote ones.
 
 ```bash
 npx supabase db push --dry-run
 ```
 
-Expect exactly those 9 files and nothing else. Then apply them:
+Expect exactly those 10 files and nothing else. Then apply them:
 
 ```bash
 npx supabase db push
@@ -106,10 +106,10 @@ Safety notes:
 
 1. **Storage**: you should see two **private** buckets, `avatars` and `session-photos`.
 2. **SQL Editor** → New query → paste `supabase/verify/hosted-checks.sql` → Run. Expected results are written
-   next to each query: 9 migrations, 2 private buckets with 5 MB/2 MB limits and image MIME types, 8 storage
-   policies, RLS on all 11 tables, no `anon` grants, 9 editable session columns, read-only notifications /
-   notes / study-buddy tables, and the 8 feature functions signed-in users may call. Query 7 becomes
-   meaningful after step 6. The file is read-only.
+   next to each query: 10 migrations, 2 private buckets with 5 MB/2 MB limits and image MIME types, 8 storage
+   policies, RLS on all 12 tables, no `anon` grants, 9 editable session columns, read-only notifications /
+   notes / study-buddy tables, the 8 feature functions signed-in users may call, and (11) a locked-down
+   feedback table. Query 7 becomes meaningful after step 6. The file is read-only.
 
 ## 5. Auth: confirmation and password-reset redirects 🌐
 
@@ -207,6 +207,48 @@ notification is re-created as a new unread item.
 
 ## Upgrading an existing project
 
+### From v2 to v2.5 (your current setup)
+
+v2.5 adds **one** migration, `20261106000100_feedback.sql` (the beta feedback table + `submit_feedback`). Nothing
+already applied is edited; accounts, sessions, subjects (and their colours), notes, photos and everything else
+are kept. It also adds one npm dependency, `react-native-svg` (bundled in Expo Go), so reinstall:
+
+```bash
+git pull
+```
+
+```bash
+npm ci
+```
+
+```bash
+npx supabase migration list
+```
+
+Local should show 10 migrations, remote 9.
+
+```bash
+npx supabase db push --dry-run
+```
+
+Expect exactly `20261106000100_feedback.sql`. Then:
+
+```bash
+npx supabase db push
+```
+
+Re-run `supabase/verify/hosted-checks.sql` (queries 1, 4, 5 and the new 11–12), then `npm run verify:hosted`,
+then restart Expo with a clean cache:
+
+```bash
+npx expo start -c
+```
+
+Note: the note editor moved from `/status` to `/note` (Metro's dev server reserves `/status`). Nothing stored
+changes; only the in-app route.
+
+### From v1 (first four migrations only)
+
 For a project that already has the first four migrations (your current setup). This adds five **new**
 migrations; nothing already applied is edited, and existing accounts, sessions, likes, comments and photos are
 kept (existing profiles get the default highlight "Hours this week"; past activity is not back-filled into
@@ -224,13 +266,13 @@ npm ci
 npx supabase migration list
 ```
 
-Local should show 9 migrations, remote the first 4.
+Local should show 10 migrations, remote the first 4.
 
 ```bash
 npx supabase db push --dry-run
 ```
 
-Expect exactly the five `20261104000100` … `20261104000500` files. Then:
+Expect the five `20261104000100` … `20261104000500` files plus `20261106000100_feedback.sql`. Then:
 
 ```bash
 npx supabase db push
@@ -249,9 +291,9 @@ Do these in the browser first, then on the phone.
 
 1. **Auth**: sign up (A) → confirm email → sign out (Profile → Sign out) → sign back in.
 2. **Timer**: Study → pick/create a subject → intention → **Start** → **Pause** (wait ~30 s) → **Resume** →
-   **Finish**. The recorded time excludes the pause.
+   hold **Hold to finish** for 3 s (a quick tap does nothing). The recorded time excludes the pause.
 3. **Restart recovery**: start a new session. On the phone, fully close the app (swipe away), reopen it; in the
-   browser, reload the tab. Study shows the same timer with the right elapsed time. Turn on airplane mode, tap
+   browser, reload the tab. Study shows the same timer with the right elapsed time. Turn on airplane mode, hold
    Finish: you'll see "hasn't reached the server yet" → back online → **Retry finish**.
 4. **Attachments**: on the completion screen add an accomplishment, mood, a photo from your library, and a
    song (title, artist, `https://open.spotify.com/track/…` link) → **Followers** → **Share with followers**.

@@ -12,6 +12,7 @@ import { pickAvatar, type PreparedImage } from '@/lib/api/storage';
 import { friendlyError } from '@/lib/errors';
 import { LIMITS, normalizeUsername, validateDisplayName, validateUsername } from '@/lib/validation';
 import { makeStyles, useTheme } from '@/providers/theme';
+import { useSingleSubmit } from '@/hooks/use-single-submit';
 
 export type ProfileFormValues = {
   username: string;
@@ -81,7 +82,7 @@ export function ProfileForm({
     }
   };
 
-  const submit = async () => {
+  const submit = useSingleSubmit(async () => {
     const next = { username: validateUsername(username), displayName: validateDisplayName(displayName) };
     if (!next.username && availability === 'taken') next.username = 'That username is taken.';
     setErrors(next);
@@ -96,7 +97,7 @@ export function ProfileForm({
     } finally {
       setSubmitting(false);
     }
-  };
+  });
 
   const usernameHint =
     availability === 'checking'

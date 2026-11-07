@@ -24,6 +24,7 @@ import type { AppNotification } from '@/lib/types';
 import { useMe } from '@/providers/auth';
 import { makeStyles, useTheme } from '@/providers/theme';
 import { useToast } from '@/providers/toast';
+import { useSingleSubmit } from '@/hooks/use-single-submit';
 
 type State = {
   items: AppNotification[];
@@ -118,7 +119,7 @@ export default function NotificationsScreen() {
       ),
     }));
 
-  const markAll = async () => {
+  const markAll = useSingleSubmit(async () => {
     const before = state.items;
     setRead('all');
     try {
@@ -128,7 +129,7 @@ export default function NotificationsScreen() {
       setState((s) => ({ ...s, items: before }));
       toast(friendlyError(e), 'error');
     }
-  };
+  });
 
   const open = (n: AppNotification) => {
     if (!n.read_at) {

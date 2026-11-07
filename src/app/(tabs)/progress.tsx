@@ -12,13 +12,14 @@ import { Icon } from '@/components/ui/icon';
 import { Banner, ErrorState, LoadingState } from '@/components/ui/states';
 import { AppText } from '@/components/ui/text';
 import { ProgressBar, WeekChart } from '@/components/week-chart';
-import { MAX_CONTENT_WIDTH, Radius, Spacing } from '@/constants/theme';
+import { MAX_CONTENT_WIDTH, Radius, Spacing, subjectColor } from '@/constants/theme';
 import { useLikeToggle } from '@/hooks/use-like-toggle';
 import { usePagedSessions } from '@/hooks/use-paged-sessions';
 import { useQuery } from '@/hooks/use-query';
 import { fetchMyWeekSessions, fetchUserSessionsPage } from '@/lib/api/sessions';
 import { archiveGoal, fetchGoals, fetchSubjects, setMilestoneCompleted } from '@/lib/api/subjects';
 import { confirmAction } from '@/lib/confirm';
+import { checkedA11y, webSpaceActivates } from '@/lib/a11y';
 import { friendlyError } from '@/lib/errors';
 import { invalidate } from '@/lib/events';
 import { computeWeekStats, weeklyGoalProgress } from '@/lib/stats';
@@ -175,7 +176,7 @@ export default function ProgressScreen() {
               stats.bySubject.map((s) => (
                 <View key={s.subjectId} style={styles.subjectRow}>
                   <View style={styles.subjectLabel}>
-                    <SubjectDot color={s.color} />
+                    <SubjectDot color={subjectColor(s.color)} />
                     <AppText variant="smallStrong" numberOfLines={1} style={styles.flex}>
                       {s.name}
                     </AppText>
@@ -347,7 +348,8 @@ function MilestoneCard({
         <Pressable
           onPress={onToggle}
           accessibilityRole="checkbox"
-          accessibilityState={{ checked: done }}
+          {...checkedA11y(done)}
+          {...webSpaceActivates(onToggle)}
           accessibilityLabel={done ? `Mark ${goal.title} as not done` : `Mark ${goal.title} as done`}
           hitSlop={10}>
           <Icon name={done ? 'checkCircle' : 'circle'} size={26} color={done ? colors.accent : colors.textSecondary} />

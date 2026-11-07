@@ -1,0 +1,10 @@
+<!-- Lockt mark: an open book whose gutter is a keyhole. Source for the app icons and favicon
+     (assets/images/*.png were rendered from this at their native sizes). The in-app version is
+     src/components/logo.tsx, which uses the same paths with theme colours. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="17" fill="#0B6E5F"/>
+  <path d="M30.5 19.5C25.5 16.2 19.4 15.3 13 16.4c-.9.2-1.5.9-1.5 1.8v26.3c0 1.1 1 1.9 2.1 1.8 6-.8 11.7.2 16.9 3.2V19.5Z" fill="#FFFFFF"/>
+  <path d="M33.5 19.5c5-3.3 11.1-4.2 17.5-3.1.9.2 1.5.9 1.5 1.8v26.3c0 1.1-1 1.9-2.1 1.8-6-.8-11.7.2-16.9 3.2V19.5Z" fill="#FFFFFF"/>
+  <circle cx="32" cy="29.5" r="4.6" fill="#0B6E5F"/>
+  <path d="M30.2 31.5h3.6l1.4 9.3c.1.6-.4 1.2-1 1.2h-4.4c-.6 0-1.1-.6-1-1.2l1.4-9.3Z" fill="#0B6E5F"/>
+</svg>

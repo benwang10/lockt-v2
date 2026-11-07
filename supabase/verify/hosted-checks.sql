@@ -2,8 +2,8 @@
 -- `npx supabase db push`. Nothing here modifies data. Each query lists what
 -- you should see.
 
--- 1) Migrations recorded (expect 9 rows: 20261102000100 … 20261102000400 and
---    20261104000100 … 20261104000500)
+-- 1) Migrations recorded (expect 10 rows: 20261102000100 … 20261102000400,
+--    20261104000100 … 20261104000500 and 20261106000100 (v2.5 feedback))
 select version, name from supabase_migrations.schema_migrations order by version;
 
 -- 2) Buckets (expect avatars: public=false, 2097152; session-photos: public=false, 5242880;
@@ -20,12 +20,12 @@ from pg_policies
 where schemaname = 'storage' and tablename = 'objects'
 order by policyname;
 
--- 4) RLS enabled on every app table (expect 11 rows, all rls_enabled = true)
+-- 4) RLS enabled on every app table (expect 12 rows, all rls_enabled = true)
 select c.relname as table_name, c.relrowsecurity as rls_enabled
 from pg_class c join pg_namespace n on n.oid = c.relnamespace
 where n.nspname = 'public'
   and c.relname in ('profiles', 'user_settings', 'follows', 'subjects', 'goals', 'study_sessions', 'likes', 'comments',
-                    'profile_statuses', 'notifications', 'study_buddies')
+                    'profile_statuses', 'notifications', 'study_buddies', 'feedback')
 order by 1;
 
 -- 5) Anonymous role has no table privileges on app tables (expect 0 rows)
@@ -33,7 +33,7 @@ select table_name, privilege_type
 from information_schema.role_table_grants
 where grantee = 'anon' and table_schema = 'public'
   and table_name in ('profiles', 'user_settings', 'follows', 'subjects', 'goals', 'study_sessions', 'likes', 'comments',
-                     'profile_statuses', 'notifications', 'study_buddies');
+                     'profile_statuses', 'notifications', 'study_buddies', 'feedback');
 
 -- 6) Signed-in users cannot edit durations or timer columns directly
 --    (expect only the 9 descriptive columns listed)
@@ -80,3 +80,21 @@ order by 1;
 -- 10) Existing profiles kept their data and got the default highlight
 --     (expect every profile with highlight_stat = hours_week unless changed in the app)
 select username, highlight_stat from public.profiles order by created_at;
+
+-- 11) v2.5 feedback: no API role can read or write the table directly
+--     (expect 0 rows), and signed-in users may call submit_feedback (expect 1 row).
+select grantee, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public' and table_name = 'feedback' and grantee in ('anon', 'authenticated');
+
+select p.proname
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'submit_feedback'
+  and has_function_privilege('authenticated', p.oid, 'execute');
+
+-- 12) Reviewing beta feedback (newest first). The SQL Editor runs as the
+--     project owner, so this works even though the app can't read the table.
+select f.created_at, f.category, p.username, f.platform, f.app_version, f.message
+from public.feedback f join public.profiles p on p.id = f.user_id
+order by f.created_at desc
+limit 100;

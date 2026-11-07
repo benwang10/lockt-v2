@@ -8,6 +8,7 @@ import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { Radius, Spacing, TOUCH_TARGET } from '@/constants/theme';
 import { searchProfiles } from '@/lib/api/profiles';
+import { checkedA11y, webSpaceActivates } from '@/lib/a11y';
 import { friendlyError } from '@/lib/errors';
 import type { BuddyInvite, BuddyStatus, ProfileSummary } from '@/lib/types';
 import { makeStyles, useTheme } from '@/providers/theme';
@@ -162,7 +163,8 @@ export function BuddyPicker({
                 onPress={() => toggle(person)}
                 disabled={disabled}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected || invited, disabled }}
+                {...checkedA11y(selected || invited, disabled)}
+                {...webSpaceActivates(() => toggle(person), disabled)}
                 accessibilityLabel={`${person.display_name}, @${person.username}${invited ? ', already invited' : ''}`}
                 style={({ pressed }) => [styles.row, styles.result, pressed && { backgroundColor: colors.surfaceMuted }, disabled && styles.dim]}>
                 <Avatar path={person.avatar_path} name={person.display_name} seed={person.id} size={36} />

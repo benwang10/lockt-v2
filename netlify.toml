@@ -1,0 +1,32 @@
+# Lockt web beta on Netlify (see docs/BETA.md).
+# Netlify builds the single-page web app; EXPO_PUBLIC_SUPABASE_URL and
+# EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (public values only) are set in the
+# Netlify site's environment variables and baked into the bundle at build time.
+[build]
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Single-page app: every route (/feed, /session/<id>, /auth-callback, ...)
+# serves index.html so direct links and refreshes work.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Always fetch the latest index.html; hashed bundles can be cached forever.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/_expo/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

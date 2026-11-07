@@ -1,7 +1,8 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/ui/icon';
+import { PressableLink } from '@/components/ui/pressable-link';
 import { AppText } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { detectMusicService } from '@/lib/validation';
@@ -55,13 +56,14 @@ export function SongCard({ title, artist, url }: { title: string; artist?: strin
     );
   }
   return (
-    <Pressable
+    <PressableLink
+      href={url!}
+      external
       onPress={open}
-      accessibilityRole="link"
       accessibilityLabel={label}
       style={({ pressed }) => [styles.card, pressed && { backgroundColor: colors.surfaceMuted }]}>
       {body}
-    </Pressable>
+    </PressableLink>
   );
 }
 

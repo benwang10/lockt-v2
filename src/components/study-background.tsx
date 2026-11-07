@@ -55,11 +55,30 @@ export function useStudyBackground(): [StudyBackgroundKind, (next: StudyBackgrou
 // ---------------------------------------------------------------------------
 type Particle = { x: number; phase: number; size: number; sway: number; speed: number };
 
-const SCENES: Record<Exclude<StudyBackgroundKind, 'off'>, { count: number; loopMs: number }> = {
-  rain: { count: 26, loopMs: 2600 },
-  bubbles: { count: 14, loopMs: 14000 },
-  leaves: { count: 9, loopMs: 18000 },
+/**
+ * v2.5: slightly more substantial scenes (more and larger particles, higher
+ * opacity), still one shared native-driver loop per scene. Particle counts
+ * stay small (≤ 34 views) for battery and performance.
+ */
+export const SCENES: Record<Exclude<StudyBackgroundKind, 'off'>, { count: number; loopMs: number }> = {
+  rain: { count: 34, loopMs: 2600 },
+  bubbles: { count: 20, loopMs: 15000 },
+  leaves: { count: 15, loopMs: 19000 },
 };
+
+/** Particle colours per scene and scheme (rgba so the scrim and timer card stay readable). */
+export function sceneColors(kind: Exclude<StudyBackgroundKind, 'off'>, dark: boolean): string[] {
+  switch (kind) {
+    case 'rain':
+      return dark ? ['rgba(170, 200, 215, 0.38)'] : ['rgba(60, 100, 120, 0.30)'];
+    case 'bubbles':
+      return dark ? ['rgba(140, 214, 187, 0.34)', 'rgba(150, 190, 230, 0.30)'] : ['rgba(11, 110, 95, 0.24)', 'rgba(11, 132, 198, 0.20)'];
+    case 'leaves':
+      return dark
+        ? ['rgba(160, 196, 120, 0.46)', 'rgba(214, 170, 90, 0.40)', 'rgba(120, 170, 110, 0.42)']
+        : ['rgba(80, 120, 40, 0.36)', 'rgba(184, 120, 20, 0.30)', 'rgba(60, 110, 70, 0.32)'];
+  }
+}
 
 /** Deterministic pseudo-random in [0, 1) so layouts are stable between renders. */
 function seeded(i: number, salt: number) {
@@ -116,12 +135,7 @@ export function StudyBackground({ kind, animate }: { kind: StudyBackgroundKind; 
   if (kind === 'off') return null;
 
   const dark = scheme === 'dark';
-  const tintColor =
-    kind === 'rain'
-      ? dark ? 'rgba(170, 200, 215, 0.30)' : 'rgba(60, 100, 120, 0.22)'
-      : kind === 'bubbles'
-        ? dark ? 'rgba(140, 214, 187, 0.18)' : 'rgba(11, 110, 95, 0.12)'
-        : dark ? 'rgba(160, 196, 120, 0.30)' : 'rgba(80, 120, 40, 0.24)';
+  const palette = sceneColors(kind, dark);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -140,7 +154,15 @@ export function StudyBackground({ kind, animate }: { kind: StudyBackgroundKind; 
       <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(30, 58, 48, 0.18)' : 'rgba(226, 239, 231, 0.45)' }]} />
       {size.height > 0
         ? particles.map((p, i) => (
-            <ParticleView key={`${kind}-${i}`} kind={kind} p={p} progress={progress} size={size} color={tintColor} still={!moving} />
+            <ParticleView
+              key={`${kind}-${i}`}
+              kind={kind}
+              p={p}
+              progress={progress}
+              size={size}
+              color={palette[i % palette.length]}
+              still={!moving}
+            />
           ))
         : null}
       {/* Readability scrim behind the timer content. */}
@@ -176,14 +198,14 @@ function ParticleView({
   const W = size.width;
 
   if (kind === 'rain') {
-    const length = 14 + p.size * 18;
+    const length = 16 + p.size * 22;
     return (
       <Animated.View
         style={{
           position: 'absolute',
           left: p.x * W,
           top: -length,
-          width: 1.5,
+          width: 2,
           height: length,
           borderRadius: 1,
           backgroundColor: color,
@@ -198,7 +220,7 @@ function ParticleView({
   }
 
   if (kind === 'bubbles') {
-    const d = 10 + p.size * 34;
+    const d = 14 + p.size * 42;
     return (
       <Animated.View
         style={{
@@ -208,20 +230,34 @@ function ParticleView({
           width: d,
           height: d,
           borderRadius: d / 2,
-          borderWidth: 1.5,
+          borderWidth: 2,
           borderColor: color,
-          backgroundColor: color.replace(/[\d.]+\)$/, '0.06)'),
+          backgroundColor: color.replace(/[\d.]+\)$/, '0.10)'),
           transform: [
             { translateY: t.interpolate({ inputRange: [0, 1], outputRange: [0, -(H + d * 2)] }) },
-            { translateX: t.interpolate({ inputRange: [0, 0.25, 0.5, 0.75, 1], outputRange: [0, p.sway * 24, 0, -p.sway * 24, 0] }) },
+            { translateX: t.interpolate({ inputRange: [0, 0.25, 0.5, 0.75, 1], outputRange: [0, p.sway * 30, 0, -p.sway * 30, 0] }) },
+            { scale: t.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.85, 1, 1.08] }) },
           ],
-        }}
-      />
+        }}>
+        {/* A small glint makes each bubble read as a bubble, not a ring. */}
+        <View
+          style={{
+            position: 'absolute',
+            top: d * 0.18,
+            left: d * 0.22,
+            width: d * 0.22,
+            height: d * 0.14,
+            borderRadius: d,
+            backgroundColor: color.replace(/[\d.]+\)$/, '0.45)'),
+            transform: [{ rotate: '-30deg' }],
+          }}
+        />
+      </Animated.View>
     );
   }
 
   // Leaves: a rounded leaf shape drifting down with a slow sway and turn.
-  const w = 14 + p.size * 12;
+  const w = 18 + p.size * 16;
   return (
     <Animated.View
       style={{

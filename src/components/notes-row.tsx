@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export function NotesRow({ me, notes }: { me: Profile; notes: NoteWithAuthor[] }
           <NoteBubble note={mine} label="Your note" onPress={() => setOpen(mine)} />
         ) : (
           <Pressable
-            onPress={() => router.push('/status')}
+            onPress={() => router.push('/note')}
             accessibilityRole="button"
             accessibilityLabel="Add a note for your followers"
             style={({ pressed }) => [styles.item, pressed && { opacity: 0.7 }]}>
@@ -87,9 +87,22 @@ function NoteSheet({ note, isMine, onClose }: { note: NoteWithAuthor | null; isM
   const styles = useStyles();
   return (
     <Modal visible={!!note} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close note" accessibilityRole="button">
+      {/* The backdrop is a sibling BEHIND the sheet, not a wrapper: wrapping made the
+          sheet's buttons <button>s nested inside the backdrop <button> on the web
+          (invalid HTML, React warning, confusing focus order). */}
+      <View style={styles.backdrop}>
+        {/* Tap outside to close. Not focusable: keyboard and screen-reader users have
+            Escape / the Close button, and focus starts on the sheet's first action. */}
+        <View
+          testID="note-backdrop"
+          style={StyleSheet.absoluteFill}
+          accessible={false}
+          importantForAccessibility="no"
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={onClose}
+        />
         {note ? (
-          <Pressable style={styles.sheet} onPress={() => undefined} accessibilityViewIsModal>
+          <View style={styles.sheet} accessibilityViewIsModal aria-modal>
             <View style={styles.sheetHeader}>
               <Avatar path={note.author.avatar_path} name={note.author.display_name} seed={note.author.id} size={44} />
               <View style={styles.flex}>
@@ -112,7 +125,7 @@ function NoteSheet({ note, isMine, onClose }: { note: NoteWithAuthor | null; isM
                   icon="edit"
                   onPress={() => {
                     onClose();
-                    router.push('/status');
+                    router.push('/note');
                   }}
                 />
               ) : (
@@ -126,9 +139,9 @@ function NoteSheet({ note, isMine, onClose }: { note: NoteWithAuthor | null; isM
               )}
               <Button title="Close" variant="secondary" onPress={onClose} />
             </View>
-          </Pressable>
+          </View>
         ) : null}
-      </Pressable>
+      </View>
     </Modal>
   );
 }

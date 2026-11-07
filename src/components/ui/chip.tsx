@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { Radius, Spacing, TOUCH_TARGET } from '@/constants/theme';
 
+import { checkedA11y, webSpaceActivates } from '@/lib/a11y';
 import { makeStyles, useTheme } from '@/providers/theme';
 
 import { Icon, type IconName } from './icon';
@@ -32,7 +33,8 @@ export function Chip({
     <Pressable
       onPress={onPress}
       accessibilityRole="radio"
-      accessibilityState={{ selected, checked: selected }}
+      {...checkedA11y(selected)}
+      {...webSpaceActivates(onPress)}
       accessibilityLabel={accessibilityLabel ?? label}
       style={({ pressed }) => [
         styles.chip,
@@ -82,7 +84,8 @@ export function Segmented<T extends string>({
             key={o.value}
             onPress={() => onChange(o.value)}
             accessibilityRole="radio"
-            accessibilityState={{ selected, checked: selected }}
+            {...checkedA11y(selected)}
+            {...webSpaceActivates(() => onChange(o.value))}
             accessibilityLabel={o.accessibilityLabel ?? o.label}
             style={[styles.segment, selected && styles.segmentSelected]}>
             {o.icon ? <Icon name={o.icon} size={16} color={selected ? colors.accentStrong : colors.textSecondary} /> : null}

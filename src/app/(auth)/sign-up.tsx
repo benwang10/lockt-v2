@@ -1,8 +1,10 @@
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import type { TextInputInstance } from 'react-native';
+import { View, type TextInputInstance } from 'react-native';
 
+import { LogoMark } from '@/components/logo';
+import { StudyDecals } from '@/components/study-decals';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { Banner, EmptyState } from '@/components/ui/states';
@@ -12,10 +14,13 @@ import { TextField } from '@/components/ui/text-field';
 import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { validateEmail, validatePassword } from '@/lib/validation';
-import { useTheme } from '@/providers/theme';
+import { Spacing } from '@/constants/theme';
+import { makeStyles, useTheme } from '@/providers/theme';
+import { useSingleSubmit } from '@/hooks/use-single-submit';
 
 export default function SignUpScreen() {
   const { colors } = useTheme();
+  const styles = useStyles();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -25,7 +30,7 @@ export default function SignUpScreen() {
   const passwordRef = useRef<TextInputInstance>(null);
   const confirmRef = useRef<TextInputInstance>(null);
 
-  const submit = async () => {
+  const submit = useSingleSubmit(async () => {
     const problem =
       validateEmail(email) ??
       validatePassword(password) ??
@@ -48,7 +53,7 @@ export default function SignUpScreen() {
     }
     // If email confirmation is enabled there is no session yet.
     if (!data.session) setAwaitingConfirmation(true);
-  };
+  });
 
   if (awaitingConfirmation) {
     return (
@@ -64,13 +69,16 @@ export default function SignUpScreen() {
   }
 
   return (
-    <Screen scroll edges={['bottom', 'left', 'right']}>
-      <AppText variant="title" accessibilityRole="header">
-        Create your account
-      </AppText>
-      <AppText variant="body" color={colors.textSecondary}>
-        You’ll pick a username next.
-      </AppText>
+    <Screen scroll edges={['bottom', 'left', 'right']} background={<StudyDecals />}>
+      <View style={styles.hero}>
+        <LogoMark size={64} />
+        <AppText variant="title" accessibilityRole="header" style={styles.center}>
+          Create your account
+        </AppText>
+        <AppText variant="body" color={colors.textSecondary} style={styles.center}>
+          You’ll pick a username next.
+        </AppText>
+      </View>
       {error ? <Banner tone="danger" message={error} /> : null}
       <TextField
         label="Email"
@@ -110,3 +118,8 @@ export default function SignUpScreen() {
     </Screen>
   );
 }
+
+const useStyles = makeStyles(() => ({
+  hero: { alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm },
+  center: { textAlign: 'center' },
+}));

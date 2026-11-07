@@ -1,6 +1,8 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Segmented } from '@/components/ui/chip';
 import { Icon } from '@/components/ui/icon';
@@ -9,6 +11,7 @@ import { Banner } from '@/components/ui/states';
 import { AppText } from '@/components/ui/text';
 import { Radius, Spacing, TOUCH_TARGET } from '@/constants/theme';
 import { updateHighlightStat } from '@/lib/api/profiles';
+import { checkedA11y, webSpaceActivates } from '@/lib/a11y';
 import { friendlyError } from '@/lib/errors';
 import { invalidate } from '@/lib/events';
 import { HIGHLIGHT_OPTIONS, HIGHLIGHT_PRIVACY_NOTE } from '@/lib/highlight';
@@ -82,7 +85,9 @@ export default function SettingsScreen() {
                 key={o.value}
                 onPress={() => chooseHighlight(o.value)}
                 accessibilityRole="radio"
-                accessibilityState={{ selected, checked: selected, busy: saving === o.value }}
+                {...checkedA11y(selected)}
+                aria-busy={saving === o.value}
+                {...webSpaceActivates(() => chooseHighlight(o.value))}
                 accessibilityLabel={`${o.label}. ${o.description}`}
                 style={({ pressed }) => [styles.option, selected && styles.optionSelected, pressed && !selected && styles.optionPressed]}>
                 <Icon name={selected ? 'checkCircle' : 'circle'} size={22} color={selected ? colors.accent : colors.textSecondary} />
@@ -102,6 +107,18 @@ export default function SettingsScreen() {
             {HIGHLIGHT_PRIVACY_NOTE}
           </AppText>
         </View>
+      </Card>
+
+      <Card>
+        <View style={styles.header}>
+          <AppText variant="heading" accessibilityRole="header">
+            Beta feedback
+          </AppText>
+          <AppText variant="small" color={colors.textSecondary}>
+            Report a bug or suggest an idea. Only the Lockt team can read it.
+          </AppText>
+        </View>
+        <Button title="Send feedback" icon="send" variant="secondary" onPress={() => router.push('/feedback')} />
       </Card>
     </Screen>
   );
