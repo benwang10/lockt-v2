@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActiveSessionBanner } from '@/components/active-session-banner';
 import { ProfileHeader } from '@/components/profile-header';
 import { SessionCard } from '@/components/session-card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Card, SectionHeader } from '@/components/ui/card';
 import { Banner } from '@/components/ui/states';
 import { AppText } from '@/components/ui/text';
@@ -79,12 +79,25 @@ export default function MyProfileScreen() {
               status={extras.data?.status}
               highlight={extras.data?.highlight}
               isMe
+              headerAction={<IconButton icon="settings" label="Settings" onPress={() => router.push('/settings')} />}
               actions={
                 <>
-                  <Button title="Edit profile" variant="secondary" size="sm" icon="edit" onPress={() => router.push('/profile/edit')} />
-                  <Button title="Find friends" variant="secondary" size="sm" icon="search" onPress={() => router.push('/search')} />
-                  <Button title="Subjects" variant="secondary" size="sm" icon="book" onPress={() => router.push('/subjects')} />
-                  <Button title="Settings" variant="secondary" size="sm" icon="settings" onPress={() => router.push('/settings')} />
+                  <Button
+                    title="Edit profile"
+                    variant="secondary"
+                    size="sm"
+                    icon="edit"
+                    onPress={() => router.push('/profile/edit')}
+                    style={styles.action}
+                  />
+                  <Button
+                    title="Subjects"
+                    variant="secondary"
+                    size="sm"
+                    icon="book"
+                    onPress={() => router.push('/subjects')}
+                    style={styles.action}
+                  />
                 </>
               }
             />
@@ -140,4 +153,6 @@ const useStyles = makeStyles((c) => ({
   column: { width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
   header: { gap: Spacing.lg, marginBottom: Spacing.md },
   footer: { marginTop: Spacing.xl, gap: Spacing.md },
+  // Equal share of the row; wraps to full width rows only if a label can't fit.
+  action: { flexGrow: 1, flexBasis: 140, minHeight: 44 },
 }));

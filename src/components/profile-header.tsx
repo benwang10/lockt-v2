@@ -18,10 +18,13 @@ export function ProfileHeader({
   status,
   highlight,
   isMe = false,
+  headerAction,
 }: {
   profile: Profile;
   counts?: { followers: number; following: number };
   actions?: ReactNode;
+  /** Compact control beside the name (e.g. the Settings icon on your own profile). */
+  headerAction?: ReactNode;
   /** Active status (already filtered by followers-only RLS and expiry). */
   status?: ProfileStatus | null;
   /** Featured statistic; null when hidden or not visible to this viewer. */
@@ -42,18 +45,22 @@ export function ProfileHeader({
           <Count label="Following" value={counts?.following} onPress={() => open('following')} />
         </View>
       </View>
-      <View style={styles.names}>
-        <AppText variant="title" accessibilityRole="header">
-          {profile.display_name}
-        </AppText>
-        <AppText variant="body" color={colors.textSecondary}>
-          @{profile.username}
-        </AppText>
+      <View style={styles.nameRow}>
+        {/* minWidth 0 lets long names wrap instead of pushing the action off screen. */}
+        <View style={styles.names}>
+          <AppText variant="title" accessibilityRole="header" numberOfLines={3}>
+            {profile.display_name}
+          </AppText>
+          <AppText variant="body" color={colors.textSecondary} numberOfLines={1} ellipsizeMode="middle">
+            @{profile.username}
+          </AppText>
+        </View>
+        {headerAction ? <View style={styles.headerAction}>{headerAction}</View> : null}
       </View>
 
       {status ? (
         <Pressable
-          onPress={isMe ? () => router.push('/status') : undefined}
+          onPress={isMe ? () => router.push('/note') : undefined}
           disabled={!isMe}
           accessibilityRole={isMe ? 'button' : 'text'}
           accessibilityLabel={`Note: ${status.emoji ?? ''} ${status.body ?? ''}. ${isMe ? 'Edit note' : ''}`}
@@ -66,17 +73,6 @@ export function ProfileHeader({
             </AppText>
           </View>
           {isMe ? <Icon name="edit" size={16} color={colors.textSecondary} /> : null}
-        </Pressable>
-      ) : isMe ? (
-        <Pressable
-          onPress={() => router.push('/status')}
-          accessibilityRole="button"
-          accessibilityLabel="Add a note to your profile"
-          style={({ pressed }) => [styles.note, styles.noteEmpty, pressed && { opacity: 0.8 }]}>
-          <Icon name="note" size={18} color={colors.accent} />
-          <AppText variant="small" color={colors.textSecondary} style={styles.flex}>
-            Share a quick note with followers (disappears after 24 h)
-          </AppText>
         </Pressable>
       ) : null}
 
@@ -127,7 +123,9 @@ const useStyles = makeStyles((c) => ({
   top: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xl },
   counts: { flexDirection: 'row', gap: Spacing.lg, flex: 1, justifyContent: 'space-around' },
   count: { alignItems: 'center', minHeight: TOUCH_TARGET, minWidth: 72, justifyContent: 'center' },
-  names: { gap: 0 },
+  nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
+  names: { flex: 1, minWidth: 0, gap: 0 },
+  headerAction: { marginTop: -2, marginRight: -Spacing.sm },
   note: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,7 +136,6 @@ const useStyles = makeStyles((c) => ({
     paddingVertical: Spacing.sm,
     minHeight: TOUCH_TARGET,
   },
-  noteEmpty: { borderWidth: 1, borderStyle: 'dashed', borderColor: c.border, backgroundColor: 'transparent' },
   noteEmoji: { fontSize: 24, lineHeight: 32 },
   highlight: {
     flexDirection: 'row',
@@ -150,6 +147,7 @@ const useStyles = makeStyles((c) => ({
     paddingVertical: Spacing.sm,
   },
   highlightValue: { fontVariant: ['tabular-nums'] },
+  // Equal-width actions; they stack (still full width) when text is very large.
   actions: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
   flex: { flex: 1 },
 }));

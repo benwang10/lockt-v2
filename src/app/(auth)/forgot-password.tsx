@@ -12,6 +12,7 @@ import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { validateEmail } from '@/lib/validation';
 import { useTheme } from '@/providers/theme';
+import { useSingleSubmit } from '@/hooks/use-single-submit';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
@@ -20,7 +21,7 @@ export default function ForgotPasswordScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const submit = async () => {
+  const submit = useSingleSubmit(async () => {
     const problem = validateEmail(email);
     if (problem) {
       setError(problem);
@@ -34,7 +35,7 @@ export default function ForgotPasswordScreen() {
     setSubmitting(false);
     if (authError) setError(friendlyError(authError));
     else setSent(true);
-  };
+  });
 
   if (sent) {
     return (

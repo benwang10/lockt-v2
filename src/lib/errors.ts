@@ -14,6 +14,10 @@ const KNOWN: Record<string, string> = {
   session_not_active: 'This session was already finished, possibly on another device.',
   session_already_completed: 'This session was already finished and saved.',
   intention_too_long: 'Your intention is too long.',
+  feedback_empty: 'Write a few words first.',
+  feedback_too_long: 'Feedback can be at most 2,000 characters.',
+  feedback_invalid_category: 'Choose Bug, Suggestion or Other.',
+  feedback_rate_limited: 'You’ve sent a lot of feedback in the last hour. Please try again a bit later.',
 };
 
 export function isNetworkError(error: unknown): boolean {

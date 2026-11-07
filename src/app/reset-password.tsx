@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { validatePassword } from '@/lib/validation';
 import { useAuth } from '@/providers/auth';
 import { useTheme } from '@/providers/theme';
+import { useSingleSubmit } from '@/hooks/use-single-submit';
 
 /** Target of the password-reset email link. */
 export default function ResetPasswordScreen() {
@@ -47,7 +48,7 @@ export default function ResetPasswordScreen() {
     });
   }, [url, setRecovering]);
 
-  const save = async () => {
+  const save = useSingleSubmit(async () => {
     const problem = validatePassword(password) ?? (password !== confirm ? 'Passwords don’t match.' : null);
     if (problem) {
       setError(problem);
@@ -59,7 +60,7 @@ export default function ResetPasswordScreen() {
     setSaving(false);
     if (updateError) setError(friendlyError(updateError));
     else setPhase('done');
-  };
+  });
 
   if (phase === 'verifying') return <LoadingState label="Checking your reset link…" />;
   if (phase === 'invalid') {

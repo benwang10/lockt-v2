@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { BackgroundPicker } from '@/components/background-picker';
+import { BackgroundControl, BackgroundPicker } from '@/components/background-picker';
+import { HoldButton } from '@/components/hold-button';
 import { StudyBackground, useStudyBackground } from '@/components/study-background';
 import { SubjectEditor } from '@/components/subject-editor';
 import { SubjectDot, SubjectPill } from '@/components/subject-pill';
@@ -14,7 +15,7 @@ import { Screen } from '@/components/ui/screen';
 import { Banner, ErrorState, LoadingState } from '@/components/ui/states';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
-import { Radius, Spacing, tint, Type } from '@/constants/theme';
+import { Radius, Spacing, subjectColor, tint, Type } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { createSubject, fetchGoals, fetchSubjects } from '@/lib/api/subjects';
 import { confirmAction } from '@/lib/confirm';
@@ -141,7 +142,7 @@ function StartSession() {
                 <Chip
                   key={s.id}
                   label={s.name}
-                  color={s.color}
+                  color={subjectColor(s.color)}
                   selected={s.id === subjectId}
                   onPress={() => setSubjectId(s.id)}
                   leading={<SubjectDot color={s.color} />}
@@ -206,7 +207,7 @@ function ActiveTimer() {
   const running = session.timer_state === 'running';
   const now = useNow(running);
   const elapsed = active.elapsedMs(now);
-  const color = session.subject_color;
+  const color = subjectColor(session.subject_color);
   const [background] = useStudyBackground();
 
   const finish = async () => {
@@ -261,16 +262,29 @@ function ActiveTimer() {
             loading={active.busy === 'pause' || active.busy === 'resume'}
             disabled={!!active.busy && active.busy !== 'pause' && active.busy !== 'resume'}
           />
-          <Button
-            title={active.pending?.kind === 'finish' ? 'Retry finish' : 'Finish'}
-            icon="stop"
-            size="lg"
-            style={styles.flex}
-            onPress={finish}
-            loading={active.busy === 'finish'}
-            disabled={!!active.busy && active.busy !== 'finish'}
-            accessibilityHint="Stops the timer and saves the session privately"
-          />
+          {active.pending?.kind === 'finish' ? (
+            // The finish was already confirmed by a hold; retrying it is a normal tap.
+            <Button
+              title="Retry finish"
+              icon="stop"
+              size="lg"
+              style={styles.flex}
+              onPress={finish}
+              loading={active.busy === 'finish'}
+              disabled={!!active.busy && active.busy !== 'finish'}
+              accessibilityHint="Sends your finish again. Your session is saved privately."
+            />
+          ) : (
+            <HoldButton
+              title="Hold to finish"
+              icon="stop"
+              style={styles.flex}
+              onComplete={finish}
+              loading={active.busy === 'finish'}
+              disabled={!!active.busy && active.busy !== 'finish'}
+              accessibilityHint="Press and hold for 3 seconds to stop the timer and save the session privately."
+            />
+          )}
         </View>
       }>
       {active.notice ? <Banner tone="info" message={active.notice} actionLabel="OK" onAction={active.clearMessages} /> : null}
@@ -287,6 +301,9 @@ function ActiveTimer() {
           onAction={active.refresh}
         />
       ) : null}
+
+      {/* Compact background switcher, kept at the top, away from Pause / Finish. */}
+      <BackgroundControl />
 
       {/* Opaque surface + subject wash: readable over any study background, in both themes. */}
       <View style={[styles.timerCard, { borderColor: tint(color, 0.35) }]}>
@@ -325,10 +342,6 @@ function ActiveTimer() {
           message="This session has been running a long time. Forgot to stop? Discard it if it doesn’t reflect real study (sessions are capped at 24h)."
         />
       ) : null}
-
-      <Card>
-        <BackgroundPicker />
-      </Card>
 
       <Button title="Discard session" variant="dangerGhost" icon="trash" onPress={discard} loading={active.busy === 'discard'} disabled={!!active.busy && active.busy !== 'discard'} />
     </Screen>

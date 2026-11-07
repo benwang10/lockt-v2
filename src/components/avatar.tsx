@@ -2,14 +2,14 @@ import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui/text';
-import { SubjectColors } from '@/constants/theme';
+import { AVATAR_COLORS } from '@/constants/theme';
 import { useSignedUrl } from '@/hooks/use-signed-url';
 import { makeStyles } from '@/providers/theme';
 
 function colorFor(seed: string) {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return SubjectColors[h % SubjectColors.length];
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
 export function Avatar({

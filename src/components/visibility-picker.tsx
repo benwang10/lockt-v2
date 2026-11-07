@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { AppText } from '@/components/ui/text';
 import { Radius, Spacing, TOUCH_TARGET } from '@/constants/theme';
 import type { Visibility } from '@/lib/types';
+import { checkedA11y, webSpaceActivates } from '@/lib/a11y';
 import { makeStyles, useTheme } from '@/providers/theme';
 
 export const VISIBILITY_OPTIONS: { value: Visibility; label: string; description: string }[] = [
@@ -33,7 +34,8 @@ export function VisibilityPicker({ value, onChange }: { value: Visibility; onCha
             key={o.value}
             onPress={() => onChange(o.value)}
             accessibilityRole="radio"
-            accessibilityState={{ selected, checked: selected }}
+            {...checkedA11y(selected)}
+            {...webSpaceActivates(() => onChange(o.value))}
             accessibilityLabel={`${o.label}. ${o.description}`}
             style={({ pressed }) => [
               styles.option,

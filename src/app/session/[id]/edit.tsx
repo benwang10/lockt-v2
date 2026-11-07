@@ -42,6 +42,7 @@ import type { BuddyInvite, Goal, ProfileSummary, SessionCardData, UserSettings, 
 import { LIMITS, validateSong } from '@/lib/validation';
 import { useMe } from '@/providers/auth';
 import { makeStyles, useTheme } from '@/providers/theme';
+import { useSingleSubmit } from '@/hooks/use-single-submit';
 
 type Loaded = { session: SessionCardData | null; settings: UserSettings; goals: Goal[]; invites: BuddyInvite[] };
 
@@ -186,7 +187,7 @@ function Editor({
     }
   };
 
-  const save = async () => {
+  const save = useSingleSubmit(async () => {
     const titleError = title.trim().length === 0 ? 'Add a title.' : null;
     setErrors({ title: titleError, song: songProblem });
     if (titleError || songProblem) {
@@ -246,9 +247,9 @@ function Editor({
     } finally {
       setSaving(false);
     }
-  };
+  });
 
-  const remove = async () => {
+  const remove = useSingleSubmit(async () => {
     const ok = await confirmAction({
       title: isFresh ? 'Discard this session?' : 'Delete this session?',
       message: 'It will be removed from your history, goals and anyone’s feed. Likes and comments are deleted too.',
@@ -266,7 +267,7 @@ function Editor({
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   const removeInvite = async (invite: BuddyInvite) => {
     const accepted = invite.status === 'accepted';
@@ -313,7 +314,7 @@ function Editor({
       edges={['bottom', 'left', 'right']}
       keyboardOffset={100}
       footer={
-        <Button title={primaryLabel} icon={visibility === 'followers' ? 'send' : 'lock'} size="lg" onPress={save} loading={saving} />
+        <Button title={primaryLabel} icon={visibility === 'followers' ? 'send' : 'lock'} size="lg" onPress={save} loading={saving} disabled={!!saved} />
       }>
       {isFresh ? (
         <View style={styles.hero}>
@@ -460,7 +461,7 @@ function Editor({
         />
       </Card>
 
-      <Button title={isFresh ? 'Discard session' : 'Delete session'} variant="dangerGhost" icon="trash" onPress={remove} />
+      <Button title={isFresh ? 'Discard session' : 'Delete session'} variant="dangerGhost" icon="trash" onPress={remove} disabled={saving} />
     </Screen>
   );
 }

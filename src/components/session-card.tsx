@@ -6,9 +6,12 @@ import { SessionPhoto } from '@/components/session-photo';
 import { SongCard } from '@/components/song-card';
 import { SubjectPill } from '@/components/subject-pill';
 import { Icon } from '@/components/ui/icon';
+import { HeartIcon } from '@/components/ui/heart-icon';
+import { PressableLink } from '@/components/ui/pressable-link';
 import { AppText } from '@/components/ui/text';
 import { moodInfo } from '@/constants/moods';
-import { Radius, Spacing, TOUCH_TARGET } from '@/constants/theme';
+import { Radius, Spacing, subjectColor, TOUCH_TARGET } from '@/constants/theme';
+import { pressedA11y } from '@/lib/a11y';
 import { formatDuration, formatRelativeTime } from '@/lib/time';
 import type { SessionCardData } from '@/lib/types';
 import { makeStyles, useTheme } from '@/providers/theme';
@@ -35,12 +38,12 @@ export function SessionCard({
 
   return (
     <View style={styles.card}>
-      <View style={[styles.stripe, { backgroundColor: session.subject_color }]} />
+      <View style={[styles.stripe, { backgroundColor: subjectColor(session.subject_color) }]} />
       <View style={styles.inner}>
         {showAuthor ? (
-          <Pressable
+          <PressableLink
+            href={`/user/${author.id}`}
             onPress={openProfile}
-            accessibilityRole="link"
             accessibilityLabel={`${author.display_name}, @${author.username}. View profile`}
             style={styles.authorRow}>
             <Avatar path={author.avatar_path} name={author.display_name} seed={author.id} size={40} />
@@ -53,7 +56,7 @@ export function SessionCard({
               </AppText>
             </View>
             {session.visibility === 'private' ? <PrivateBadge /> : null}
-          </Pressable>
+          </PressableLink>
         ) : (
           <View style={styles.metaRow}>
             <AppText variant="caption" color={colors.textSecondary}>
@@ -122,15 +125,13 @@ export function SessionCard({
             onPress={() => onToggleLike?.(session)}
             disabled={!onToggleLike}
             accessibilityRole="button"
-            accessibilityLabel={session.liked_by_me ? 'Unlike' : 'Like'}
-            accessibilityState={{ selected: session.liked_by_me }}
+            // One stable name + a pressed state (aria-pressed on web) instead of a label that flips.
+            accessibilityLabel="Like"
+            {...pressedA11y(session.liked_by_me)}
             accessibilityHint={`${session.like_count} ${session.like_count === 1 ? 'like' : 'likes'}`}
+            testID={`like-${session.id}`}
             style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}>
-            <Icon
-              name={session.liked_by_me ? 'heartFill' : 'heart'}
-              size={22}
-              color={session.liked_by_me ? colors.like : colors.textSecondary}
-            />
+            <HeartIcon filled={session.liked_by_me} size={22} color={session.liked_by_me ? colors.like : colors.textSecondary} />
             <AppText variant="smallStrong" color={colors.textSecondary}>
               {session.like_count}
             </AppText>
@@ -163,10 +164,10 @@ function BuddiesRow({ buddies }: { buddies: SessionCardData['buddies'] }) {
         with
       </AppText>
       {buddies.map(({ inviteId, profile }, i) => (
-        <Pressable
+        <PressableLink
           key={inviteId}
+          href={`/user/${profile.id}`}
           onPress={() => router.push({ pathname: '/user/[id]', params: { id: profile.id } })}
-          accessibilityRole="link"
           accessibilityLabel={`Study buddy ${profile.display_name}, @${profile.username}. View profile`}
           hitSlop={6}
           style={({ pressed }) => [styles.buddy, pressed && { opacity: 0.6 }]}>
@@ -175,7 +176,7 @@ function BuddiesRow({ buddies }: { buddies: SessionCardData['buddies'] }) {
             {profile.display_name}
             {i < buddies.length - 1 ? ',' : ''}
           </AppText>
-        </Pressable>
+        </PressableLink>
       ))}
     </View>
   );

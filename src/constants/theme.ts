@@ -165,19 +165,97 @@ export const MAX_FONT_SCALE: Partial<Record<keyof typeof Type, number>> = {
   overline: 1.6,
 };
 
-/** Subject colours: distinct hues that stay readable as dots, bars and tints. */
-export const SubjectColors = [
-  '#5B5BD6', // indigo
-  '#0B84C6', // ocean
-  '#0F8A5F', // green
-  '#C77700', // amber
-  '#D13B3B', // red
-  '#C2378A', // magenta
-  '#7C4DDB', // violet
-  '#0E8C8C', // teal
-  '#E0601B', // orange
-  '#5E6B7A', // slate
+/**
+ * Subject colours: distinct hues that stay readable as dots, bars, stripes and
+ * tints on both the warm light and the warm dark surfaces (every colour has at
+ * least 2.5:1 contrast against `surface` in both schemes; see
+ * src/lib/__tests__/subject-colors.test.ts). Ordered by hue family so the
+ * swatch grid reads as a calm spectrum.
+ *
+ * The ten v1/v2 colours are kept with their exact hex values, so saved
+ * subjects keep their colour. The database accepts any #RRGGBB value, so no
+ * migration is needed when this list grows.
+ */
+export const SUBJECT_PALETTE = [
+  // greens
+  { hex: '#0B6E5F', name: 'Forest' },
+  { hex: '#0F8A5F', name: 'Green' },
+  { hex: '#5E8C4A', name: 'Sage' },
+  { hex: '#7A8B2B', name: 'Moss' },
+  // teals & blues
+  { hex: '#0E8C8C', name: 'Teal' },
+  { hex: '#0B84C6', name: 'Ocean' },
+  { hex: '#4BA3C7', name: 'Sky' },
+  { hex: '#3D63B8', name: 'Navy' },
+  // purples
+  { hex: '#5B5BD6', name: 'Indigo' },
+  { hex: '#7C4DDB', name: 'Violet' },
+  { hex: '#9D7FE0', name: 'Lavender' },
+  { hex: '#9A4BA8', name: 'Plum' },
+  // pinks
+  { hex: '#C2378A', name: 'Magenta' },
+  { hex: '#D6567F', name: 'Rose' },
+  { hex: '#B03A68', name: 'Berry' },
+  // warm reds
+  { hex: '#D13B3B', name: 'Red' },
+  { hex: '#B5482F', name: 'Brick' },
+  { hex: '#E06A50', name: 'Coral' },
+  // oranges & yellows
+  { hex: '#E0601B', name: 'Orange' },
+  { hex: '#C77700', name: 'Amber' },
+  { hex: '#B8930F', name: 'Mustard' },
+  // neutrals
+  { hex: '#8A5A3B', name: 'Cocoa' },
+  { hex: '#5E6B7A', name: 'Slate' },
+  { hex: '#8A8174', name: 'Stone' },
 ] as const;
+
+export const SubjectColors: readonly string[] = SUBJECT_PALETTE.map((c) => c.hex);
+
+/**
+ * Background colours for initials avatars. Frozen to the original ten subject
+ * colours so growing the subject palette never changes anyone's avatar.
+ */
+export const AVATAR_COLORS = [
+  '#5B5BD6', '#0B84C6', '#0F8A5F', '#C77700', '#D13B3B', '#C2378A', '#7C4DDB', '#0E8C8C', '#E0601B', '#5E6B7A',
+] as const;
+
+/** Default for new subjects (indigo, the v1 default). */
+export const DEFAULT_SUBJECT_COLOR = '#5B5BD6';
+
+/** Human name for a palette colour ("Sage"), or a generic label for custom/legacy values. */
+export function subjectColorName(hex: string): string {
+  const match = SUBJECT_PALETTE.find((c) => c.hex.toLowerCase() === hex.toLowerCase());
+  return match ? match.name : 'Custom colour';
+}
+
+/**
+ * The colour to draw for a subject everywhere (cards, pills, chart segments,
+ * legends, swatches): the saved colour if it is a valid #RRGGBB hex,
+ * otherwise forest green.
+ */
+export function subjectColor(color: string | null | undefined): string {
+  return subjectColorOr(color, FOREST_GREEN);
+}
+
+/** Text/icon colour with the best contrast on top of a solid subject colour. */
+export function onSubjectColor(hex: string): string {
+  return relativeLuminance(hex) > 0.22 ? '#211D17' : '#FFFFFF';
+}
+
+/** WCAG relative luminance of a #RRGGBB colour. */
+export function relativeLuminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
 
 /** A subject colour if it is a valid #RRGGBB hex, otherwise the theme's forest green. */
 export function subjectColorOr(color: string | null | undefined, fallback: string): string {

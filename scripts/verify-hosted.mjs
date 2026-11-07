@@ -409,6 +409,17 @@ try {
     await rpc(a.client, 'clear_status', {});
   }
 
+  // ---- v2.5 feedback: read-only checks (submitting would leave a permanent row, so it isn't done here)
+  const { error: fbRead } = await b.client.from('feedback').select('id').limit(1);
+  check('feedback can’t be read through the API (needs the 20261106000100 migration)', !!fbRead, fbRead?.code);
+  let fbValidation = null;
+  try {
+    await rpc(b.client, 'submit_feedback', { p_category: 'bug', p_message: '   ' });
+  } catch (e) {
+    fbValidation = e.message;
+  }
+  check('submit_feedback exists and rejects empty feedback', /feedback_empty/.test(fbValidation ?? ''), fbValidation ?? 'no error');
+
   // ---- Private session: B must not get it by any route
   const priv = await createCompletedSession(a, subject.id);
   cleanup.push(async () => a.client.from('study_sessions').delete().eq('id', priv.id));

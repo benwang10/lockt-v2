@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { SubjectDot } from '@/components/subject-pill';
 import { AppText } from '@/components/ui/text';
-import { Radius, Spacing, subjectColorOr } from '@/constants/theme';
+import { Radius, Spacing, subjectColor } from '@/constants/theme';
 import type { DaySegment, SubjectTotal } from '@/lib/stats';
 import { formatDuration, formatDurationCompact } from '@/lib/time';
 import { addLocalDays, WEEKDAY_SHORT } from '@/lib/week';
@@ -45,7 +45,7 @@ export function WeekChart({
   // Default selection: today (current week) or the busiest day; reset per week.
   const selected =
     chosen && chosen.week === weekStart.getTime() ? chosen.day : todayIndex >= 0 ? todayIndex : busiest;
-  const colorOf = (c: string) => subjectColorOr(c, colors.accent);
+  const colorOf = (c: string) => subjectColor(c);
 
   const selectedDay = addLocalDays(weekStart, selected);
   const selectedSegments = dailySegments[selected] ?? [];

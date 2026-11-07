@@ -9,7 +9,7 @@ import { Screen } from '@/components/ui/screen';
 import { Banner } from '@/components/ui/states';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
-import { Spacing } from '@/constants/theme';
+import { Spacing, subjectColor } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { createGoal, fetchSubjects } from '@/lib/api/subjects';
 import { friendlyError } from '@/lib/errors';
@@ -20,6 +20,7 @@ import { LIMITS } from '@/lib/validation';
 import { WEEK_DEFINITION_TEXT, addLocalDays } from '@/lib/week';
 import { useMe } from '@/providers/auth';
 import { makeStyles, useTheme } from '@/providers/theme';
+import { useSingleSubmit } from '@/hooks/use-single-submit';
 
 const HOUR_PRESETS = [2, 5, 8, 10, 15];
 
@@ -49,7 +50,7 @@ export default function NewGoalScreen() {
     { label: 'In a month', value: toDateString(addLocalDays(today, 30)) },
   ];
 
-  const save = async () => {
+  const save = useSingleSubmit(async () => {
     setError(null);
     const hoursNumber = Number(hours.replace(',', '.'));
     const minutes = Math.round(hoursNumber * 60);
@@ -84,7 +85,7 @@ export default function NewGoalScreen() {
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   return (
     <Screen scroll edges={['bottom', 'left', 'right']} footer={<Button title="Create goal" size="lg" onPress={save} loading={saving} />}>
@@ -143,7 +144,7 @@ export default function NewGoalScreen() {
             <Chip
               key={s.id}
               label={s.name}
-              color={s.color}
+              color={subjectColor(s.color)}
               selected={subjectId === s.id}
               onPress={() => setSubjectId(s.id)}
               leading={<SubjectDot color={s.color} />}

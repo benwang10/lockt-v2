@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActiveSessionBanner } from '@/components/active-session-banner';
+import { Logo } from '@/components/logo';
 import { NotesRow } from '@/components/notes-row';
 import { SessionCard } from '@/components/session-card';
 import { Button, IconButton } from '@/components/ui/button';
@@ -43,9 +44,10 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <AppText variant="title" accessibilityRole="header">
-          {APP_NAME}
-        </AppText>
+        {/* Small logo in the top corner; the heading role keeps the screen title for screen readers. */}
+        <View accessibilityRole="header" accessibilityLabel={`${APP_NAME} feed`}>
+          <Logo size={30} />
+        </View>
         <View style={styles.headerActions}>
           <IconButton icon="search" label="Find friends" onPress={() => router.push('/search')} />
           <IconButton

@@ -10,7 +10,7 @@ describe('profile status rules (mirror the database)', () => {
   test('100 characters max, emoji or note required', () => {
     expect(validateStatus({ emoji: null, body: 'x'.repeat(STATUS_MAX_CHARS) })).toBeNull();
     expect(validateStatus({ emoji: null, body: 'x'.repeat(STATUS_MAX_CHARS + 1) })).toMatch(/100/);
-    expect(validateStatus({ emoji: null, body: '   ' })).toMatch(/note or pick an emoji/);
+    expect(validateStatus({ emoji: null, body: '   ' })).toMatch(/note or add an emoji/);
     expect(validateStatus({ emoji: '☕', body: '' })).toBeNull();
   });
 
